@@ -1,0 +1,4 @@
+packaging==19.2
+pypass==0.2.1
+fabric==2.5.0
+git+https://github.com/jensecj/fabrikant.git
