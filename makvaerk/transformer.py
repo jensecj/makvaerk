@@ -2,7 +2,6 @@ import os
 import sys
 import json
 import datetime
-
 import getpass
 
 import click
@@ -13,6 +12,8 @@ import fabric
 from fabric import Config, Connection
 from fabrikant import fs, system
 from fabrikant.apps import systemd, apt, pacman
+
+import configuration
 
 import util
 
@@ -31,32 +32,42 @@ def pick_package_manager(c, ctx):
     pass
 
 
-def pre_plan(l, r, ctx):
-    print("PRE PLAN")
+def pre_transform(l, r, ctx):
+    print("PRE TRANSFORM")
 
     gather_information(r, ctx)
     pick_package_manager(r, ctx)
 
-    ctx.update({"PLAN_START_TIME": util.timestamp()})
+    ctx.update({"TRANSFORM_START_TIME": util.timestamp()})
 
 
-def default_plan():
-    return {"version": "1"}
-
-
-def _plan(l, r, ctx, config):
-    print("PLAN")
-
-    plan = default_plan()
+def _transform(l, r, ctx, config):
+    print("TRANSFORM")
 
     # TODO: do some planning
 
-    return plan
+    # === THE ORDER OF THINGS ===
+    # create users
+    users = config.get("USERS") or []
+    print(f"users = {users}")
+    for user in users:
+        print(user)
+        # print(system.create_user(r, user))
+
+    # create groups
+    # add ssh keys
+    # add gpg keys
+    # set system settings (dont want to disable password login before addins ssh users)
+    # transfer files
+    # create links
+    # install dependencies
+    # setup services
+    # set app settings
 
 
-def post_plan(l, r, ctx):
-    print("POST PLAN")
-    ctx.update({"PLAN_END_TIME": util.timestamp()})
+def post_transform(l, r, ctx):
+    print("POST TRANSFORM")
+    ctx.update({"TRANSFORM_END_TIME": util.timestamp()})
 
 
 def connect(host):
@@ -72,11 +83,11 @@ def connect(host):
     return Connection(host, config=remote_config)
 
 
-def plan(host, config=None, config_file=None):
+def apply(host, config={}, config_file=None):
     if config_file:
+        config = configuration.read_from_file(config_file)
         # TODO: load config properly
         # TODO: validate config with json-schema
-        config = util.load_json(config_file)
 
     local = Context()
 
@@ -87,17 +98,9 @@ def plan(host, config=None, config_file=None):
         remote = connect(host)
 
     context = {}
-    pre_plan(local, remote, context)
-    plan = _plan(local, remote, context, config)
-    post_plan(local, remote, context)
-
-    # TODO: system settings
-    # TODO: ssh users
-    # TODO: groups
-    # TODO: users
-    # TODO: dependencies
-    # TODO: services
-    # TODO: app settings
+    pre_transform(local, remote, context)
+    plan = _transform(local, remote, context, config)
+    post_transform(local, remote, context)
 
     sys.stdout.write("context: ")
     util.print_json(context)
