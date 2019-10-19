@@ -4,8 +4,7 @@ import json
 
 import click
 
-import planner
-
+import transformer
 import util
 
 
@@ -17,30 +16,12 @@ def cli():
 @click.command()
 @click.argument("host")
 @click.argument("config-file")
-@click.option("-o", "--out", help="file to save plan into")
-def plan(host, config_file, out):
-    print(f"planning with {config_file} on {host}")
-
-    plan = planner.plan(host, config_file=config_file)
-
-    sys.stdout.write("plan: ")
-    util.print_json(plan)
-
-    if out and not os.path.isdir(out):
-        with open(out, "w+") as f:
-            json.dump(plan, f, indent=4)
-
-    print("planning complete")
+def apply(host, config_file):
+    print(f"transforming {host} with {config_file}")
+    transformer.apply(host, config_file=config_file)
+    print("transformation complete")
 
 
-@click.command()
-@click.argument("host")
-@click.argument("plan-file")
-def apply(host, plan_file):
-    print(f"applying {plan_file} on {host}")
-
-
-cli.add_command(plan)
 cli.add_command(apply)
 
 
